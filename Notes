@@ -1,0 +1,423 @@
+About WSDL 
+========
+The Structure of the wsdl is like below
+
+		xml tag					description
+		========			=========
+			<types>					A container for data type definitions used by the web service
+			<message>			A typed definition of the data being communicated
+			<portType>			A set of operations supported by one or more endpoints
+			<binding>				A protocol and data format specification for a particular port type
+			
+
+	The main structure of the wsdl documents are looks like
+	
+	<definitions>
+
+			<types>
+					data type definitions........
+			</types>
+
+			<message>
+			  definition of the data being communicated....
+			</message>
+
+			<portType>
+			  set of operations......
+			</portType>
+
+			<binding>
+			  protocol and data format specification....
+			</binding>
+
+
+			
+	for more  visit  : http://www.w3schools.com/webservices/ws_wsdl_documents.asp
+	
+	
+	
+wsdl to Java
+================
+During the conversation from wsdl file to java by using either wsdl2java(cxf) or wsimport(java),
+In the Generated code we found some interface, class and pojo based in the element define in the wsdl
+
+	wsdl									java
+	====							========
+	wsdl:portType				java Interface
+	Any complex type			java classes
+	Any complex type			Java classes
+	
+	Note - The endpoint defined by the wsdl:service element is also generated into a Java class that is used by consumers to access endpoints implementing the service.
+	
+	
+	
+	About CXF
+	=======
+	
+	Tutorial : http://cxf.apache.org/docs/developing-a-service.html
+	
+	
+	Develop a service by using contract fast approach/top down approach 
+	(wsdl-java skliton for implimentaion/wsdl-java for consuming puposes)
+	=========================================================
+	
+	You can generate the code needed to develop your service using the following command:
+
+	wsdl2java  -ant  -impl  -server  -d  <outputDir> myService.wsdl
+
+	The command does the following:
+			The  -ant  argument generates a Ant makefile, called build.xml, for your application.
+			The  -impl  argument generates a shell implementation class for each portType element in the WSDL document.
+			The  -server  argument generates a simple main() to launch your service as a stand alone application.
+			The  -d  outputDir argument tells wsdl2java to write the generated code to a directory called outputDir.
+			myService.wsdl  is the WSDL document from which code is generated.
+	
+	
+	After execuating the command we 'll see the below kind of file
+	
+			file name																	Desciption
+			========															=========
+	portTypeName.java																The SEI. This file contains the interface your service implements. You should not edit this file.
+	serviceName.java																	The endpoint. This file contains the Java class your clients will use to make requests on the service.
+	portTypeNameImpl.java														The skeleton implementation class. You will modify this file to implement your service.
+	portTypeName_portTypeNameImplPort_Server.java		A basic server main() that allows you to deploy your service as a stand alone process.
+
+
+	develop a services by using botom up approach 
+	(Java file to wsdl)
+	====================================
+	
+	1. Create a Service Endpoint Interface (SEI) that defines the methods you wish to expose as a service.
+			
+			Tip
+			=====
+			You can work directly from a Java class, but working from an interface is the recommended approach. Interfaces are better for sharing with the developers who will be responsible for developing the applications consuming your service. The interface is smaller and does not provide any of the service's implementation details.
+	
+	2. Add the required annotations to your code.
+	
+	3. Generate the WSDL contract for your service.
+			Tip
+		    ===
+			If you intend to use the SEI as the service's contract, it is not necessary to generate a WSDL contract
+			
+	4. Publish the service.
+	
+	
+	Creating the SEI
+	===============
+	There are two basic patterns for creating an SEI:
+
+	>Green field development 
+		You are developing a new service from the ground up. When starting fresh, it is best to start by creating the SEI first. You can then distribute the SEI to any developers that are responsible for implementing the services and consumers that use the SEI.
+
+	>Service enablement 
+		In this pattern, you typically have an existing set of functionality that is implemented as a Java class and you want to service enable it. This means that you will need to do two things:
+			>Create an SEI that contains only the operations that are going to be exposed as part of the service.
+			>Modify the existing Java class so that it implements the SEI.
+			
+	Example
+	========
+
+SEI
+-----------------	
+		package org.apache.cxf;
+		 
+		public interface QuoteReporter
+		{
+		  public Quote getQuote(String ticker);
+		}
+
+
+Implimentation of SEI
+-----------------------------
+
+		package org.apache.cxf;
+		 
+		import java.util.*;
+		 
+		public class StockQuoteReporter implements QuoteReporter
+		{
+		  ...
+		  public Quote getQuote(String ticker)
+		  {
+			Quote retVal = new Quote();
+			retVal.setID(ticker);
+			retVal.setVal(Board.check(ticker));[1]
+			Date retDate = new Date();
+			retVal.setTime(retDate.toString());
+			return(retVal);
+		  }
+		}
+
+
+Annotating the Code
+==================
+
+	JAX-WS relies on the annotation feature of Java 5. The JAX-WS annotations are used to specify the metadata used to map the SEI to a fully specified service definition. Among the information provided in the annotations are the following:
+
+		The target namespace for the service.
+		The name of the class used to hold the request message.
+		The name of the class used to hold the response message.
+		If an operation is a one way operation.
+		The binding style the service uses.
+		The name of the class used for any custom exceptions.
+		The namespaces under which the types used by the service are defined.
+		
+		Tip
+		---------
+		Most of the annotations have sensible defaults and do not need to be specified. However, the more information you provide in the annotations, the better defined your service definition. A solid service definition increases the likely hood that all parts of a distributed application will work together.
+		
+		
+Required Annotation
+================
+
+The @WebService  annotation
+--------------------------------
+The  @WebService  annotation is defined by the javax.jws.WebService interface and it is placed on an interface or a class that is intended to be used as a service. @WebService has the following properties:
+
+	Property							Description
+	========					=============
+		name								Specifies the name of the service interface. This property is mapped to the name attribute of the wsdl:portType element that defines the 	 
+	                            				service's interface in a WSDL contract. The default is to append PortType to the name of the implementation class.
+
+		targetNamespace     		Specifies the target namespace under which the service is defined. If this property is not specified, the target namespace is derived from the 
+                               					package name.
+
+		serviceName					Specifies the name of the published service. This property is mapped to the name attribute of the wsdl:service element that defines the 
+												published service. The default is to use the name of the service's implementation class. 
+												Note: Not allowed on the SEI
+
+		wsdlLocation					Specifies the URI at which the service's WSDL contract is stored. The default is the URI at which the service is deployed.
+
+		endpointInterface			Specifies the full name of the SEI that the implementation class implements. This property is only used when the attribute is used on a 
+												service implementation class. 
+												Note: Not allowed on the SEI
+
+		portName						Specifies the name of the endpoint at which the service is published. This property is mapped to the name attribute of the wsdl:port 
+												element that specifies the endpoint details for a published service. The default is the append Port to the name of the service's implementation class. 
+												Note: Not allowed on the SEI		
+
+								
+EXAMPLE
+===============
+	SEI
+	-------
+		package com.mycompany.demo;
+		 
+		import javax.jws.*;
+		 
+		@WebService(name="quoteUpdater",
+		   targetNamespace="http://cxf.apache.org",
+		   wsdlLocation="http://somewhere.com/quoteExampleService?wsdl")
+		public interface QuoteReporter
+		{
+		  public Quote getQuote(@WebParam(name="ticker") String ticker);
+		}
+		
+	
+	SEI Implementation
+	-------------------------
+		package org.apache.cxf;
+		 
+		import javax.jws.*;
+		 
+		@WebService(endpointInterface="org.apache.cxf.quoteReporter",
+		   targetNamespace="http://cxf.apache.org",
+		   portName="StockQuotePort",
+		   serviceName="StockQuoteReporter",
+		)
+		public class StockQuoteReporter implements QuoteReporter
+		{
+		  public Quote getQuote(String ticker)
+		  {
+		  ...
+		  }
+		}	
+		
+
+Annotation and there property
+===================
+
+@SOAPBinding
+
+The @SOAPBinding annotation is defined by the javax.jws.soap.SOAPBinding interface. It provides details about the SOAP binding used by the service when it is deployed. If the @SOAPBinding annotation is not specified, a service is published using a wrapped doc/literal SOAP binding.
+
+You can put the @SOAPBinding annotation on the SEI and any of the SEI's methods. When it is used on a method, setting of the method's @SOAPBinding annotation take precedent.
+			Property					property Value
+			========			=============
+			style						Style.DOCUMENT (default)
+											Style.RPC
+											
+			use							Use.LITERAL (default) 
+											Use.ENCODED
+											
+			parameterStyle		ParameterStyle.BARE
+											ParameterStyle.WRAPPED (default)
+
+
+@WebMethod 		
+							
+The @WebMethod annotation is defined by the javax.jws.WebMethod interface. It is placed on the methods in the SEI. The @WebMethod annotation provides the information that is normally represented in the wsdl:operation element describing the operation to which the method is associated.
+
+The following table describes the properties of the @WebMethod annotation.
+
+		property
+		======
+		operationName
+		action
+		exclude
+
+@RequestWrapper 
+@ResponseWrapper
+
+example
+-----------
+
+	package org.apache.cxf;
+	 
+	import javax.jws.*;
+	import javax.xml.ws.*;
+	 
+	@WebService(name="quoteReporter")
+	public interface QuoteReporter
+	{
+	  @WebMethod(operationName="getStockQuote")
+	  @RequestWrapper(targetNamespace="http://demo.mycompany.com/types",
+		  className="java.lang.String")
+	  @ResponseWrapper(targetNamespace="http://demo.mycompany.com/types",
+		  className="org.eric.demo.Quote")
+	  public Quote getQuote(String ticker);
+	}
+
+	
+	
+	
+@WebFault 
+===========
+	name
+	targetNamespace
+	faultName
+
+	The @WebFault annotation is defined by the javax.xml.ws.WebFault interface. 
+	It is placed on exceptions that are thrown by your SEI. The @WebFault annotation is used to map the Java exception to a wsdl:fault element. This information is used to marshall the exceptions into a representation that can be processed by both the service and its consumers.
+
+
+
+ @Oneway 
+ ========
+ The @Oneway annotation is defined by the javax.jws.Oneway interface. It is placed on the methods in the SEI that will not require a response from the service. The @Oneway annotation tells the run time that it can optimize the execution of the method by not waiting for a response and not reserving any resources to process a response.
+ 
+ 
+ @WebParam 
+ ===========
+ name
+ targetNamespace
+ mode
+ header
+ partName
+ 
+ The @WebParam annotation is defined by the javax.jws.WebParam interface. It is placed on the parameters on the methods defined in the SEI. The @WebParam annotation allows you to specify the direction of the parameter, if the parameter will be placed in the SOAP header, and other properties of the generated wsdl:part.
+ 
+ 
+ @WebResult
+ ==========
+ The @WebResult annotation is defined by the javax.jws.WebResult interface. It is placed on the methods defined in the SEI. The @WebResult annotation allows you to specify the properties of the generated wsdl:part that is generated for the method's return value.
+ 
+ name
+ targetNamespace
+ header
+ partName
+ 
+ 
+ example
+ ------------
+		package org.apache.cxf;
+		 
+		import javax.jws.*;
+		import javax.xml.ws.*;
+		import javax.jws.soap.*;
+		import javax.jws.soap.SOAPBinding.*;
+		import javax.jws.WebParam.*;
+		 
+		@WebService(name="quoteReporter")
+		@SOAPBinding(style=Style.RPC, use=Use.LITERAL)
+		public interface QuoteReporter
+		{
+		  @WebMethod(operationName="getStockQuote")
+		  @RequestWrapper(targetNamespace="http://demo.mycompany.com/types",
+			 className="java.lang.String")
+		  @ResponseWrapper(targetNamespace="http://demo.mycompany.com/types",
+			 className="org.eric.demo.Quote")
+		  @WebResult(targetNamespace="http://demo.mycompany.com/types",
+			 name="updatedQuote")
+		  public Quote getQuote(
+			 @WebParam(targetNamespace="http://demo.mycompany.com/types",
+					   name="stockTicker",
+					   mode=Mode.IN)
+					   String ticker
+		  );
+		}
+		
+		
+		
+		after that we can generate wsdl file from java2ws command
+		
+		
+		The Maven script for java2ws comand is 
+		
+		<plugin>
+    <groupId>org.apache.cxf</groupId>
+    <artifactId>cxf-java2ws-plugin</artifactId>
+    <version>${cxf.version}</version>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-frontend-jaxws</artifactId>
+            <version>${cxf.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-frontend-simple</artifactId>
+            <version>${cxf.version}</version>
+        </dependency>
+    </dependencies>
+ 
+    <executions>
+        <execution>
+            <id>process-classes</id>
+            <phase>process-classes</phase>
+            <configuration>
+                <className>org.apache.hello_world.Greeter</className>
+                <genWsdl>true</genWsdl>
+                <verbose>true</verbose>
+            </configuration>
+            <goals>
+                <goal>java2ws</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+
+and additionally we can add :-
+
+<configuration>
+   <className>...</className>
+   <classpath>...</classpath>
+   <outputFile>...</outputFile>
+   <genWsdl>true</genWsdl>
+   <genServer>false</genServer>
+   <genClient>false</genClient>
+   <genWrapperbean>false</genWrapperbean>
+   <frontend>jaxws</frontend>
+   <databinding>jaxb</databinding>
+   <serviceName>...</serviceName>
+   <soap12>false</soap12>
+   <targetNameSpace>...</targetNameSpace>
+   <verbose>false</verbose>
+   <quiet>false</quiet>
+   <attachWsdl>false</attachWsdl>
+   <address>...</address>
+</configuration>
+
+In the outputFile vale by default value is : ${project.build.directory}/generated/wsdl/${className}.wsdl
+		
